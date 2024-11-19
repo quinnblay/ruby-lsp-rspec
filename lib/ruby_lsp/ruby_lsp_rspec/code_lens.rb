@@ -31,7 +31,7 @@ module RubyLsp
         dispatcher.register(self, :on_call_node_enter, :on_call_node_leave)
 
         @base_command = T.let(
-          "dc exec api-backend bundle exec spring rspec",
+          "docker compose exec api-backend bundle exec spring rspec",
           String,
         )
       end
