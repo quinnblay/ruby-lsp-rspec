@@ -17,27 +17,21 @@ module RubyLsp
       end
       def initialize(response_builder, uri, dispatcher)
         @response_builder = response_builder
-        # Listener is only initialized if uri.to_standardized_path is valid
-        @path = T.let(T.must(uri.to_standardized_path), String)
+
+        # Get the workspace root and current file path
+        workspace_root = Pathname.new(Dir.pwd)
+        file_path = Pathname.new(T.must(uri.to_standardized_path))
+
+        # Calculate the relative path from workspace root
+        @path = T.let(file_path.relative_path_from(workspace_root).to_s, String)
+
         @group_id = T.let(1, Integer)
         @group_id_stack = T.let([], T::Array[Integer])
         @anonymous_example_count = T.let(0, Integer)
         dispatcher.register(self, :on_call_node_enter, :on_call_node_leave)
 
         @base_command = T.let(
-          begin
-            cmd = if File.exist?(File.join(Dir.pwd, "bin", "rspec"))
-              "bin/rspec"
-            else
-              "rspec"
-            end
-
-            if File.exist?("Gemfile.lock")
-              "bundle exec #{cmd}"
-            else
-              cmd
-            end
-          end,
+          "dc exec api-backend bundle exec spring rspec",
           String,
         )
       end
@@ -102,7 +96,13 @@ module RubyLsp
       sig { params(node: Prism::Node, name: String, kind: Symbol).void }
       def add_test_code_lens(node, name:, kind:)
         line_number = node.location.start_line
-        command = "#{@base_command} #{@path}:#{line_number}"
+
+        # Command for terminal execution (with Docker)
+        terminal_command = "#{@base_command} #{@path}:#{line_number}"
+
+        # Command for Test Runner execution (without Docker prefix)
+        # The Test Runner needs just the basic command as it handles the execution context
+        runner_command = "bundle exec rspec #{@path}:#{line_number}"
 
         grouping_data = { group_id: @group_id_stack.last, kind: kind }
         grouping_data[:id] = @group_id if kind == :group
@@ -110,7 +110,7 @@ module RubyLsp
         arguments = [
           @path,
           name,
-          command,
+          runner_command, # Using runner_command for the Run option
           {
             start_line: node.location.start_line - 1,
             start_column: node.location.start_column,
@@ -118,6 +118,9 @@ module RubyLsp
             end_column: node.location.end_column,
           },
         ]
+
+        terminal_arguments = arguments.clone
+        terminal_arguments[2] = terminal_command # Using terminal_command for Run In Terminal option
 
         @response_builder << create_code_lens(
           node,
@@ -131,7 +134,7 @@ module RubyLsp
           node,
           title: "Run In Terminal",
           command_name: "rubyLsp.runTestInTerminal",
-          arguments: arguments,
+          arguments: terminal_arguments,
           data: { type: "test_in_terminal", **grouping_data },
         )
 
