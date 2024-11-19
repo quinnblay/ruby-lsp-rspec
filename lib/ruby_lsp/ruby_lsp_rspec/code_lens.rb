@@ -148,13 +148,13 @@ module RubyLsp
         terminal_arguments = arguments.clone
         terminal_arguments[2] = terminal_command # Using terminal_command for Run In Terminal option
 
-        @response_builder << create_code_lens(
-          node,
-          title: "Run",
-          command_name: "rubyLsp.runTest",
-          arguments: arguments,
-          data: { type: "test", **grouping_data },
-        )
+        # @response_builder << create_code_lens(
+        #   node,
+        #   title: "Run",
+        #   command_name: "rubyLsp.runTest",
+        #   arguments: arguments,
+        #   data: { type: "test", **grouping_data },
+        # )
 
         @response_builder << create_code_lens(
           node,
@@ -164,13 +164,13 @@ module RubyLsp
           data: { type: "test_in_terminal", **grouping_data },
         )
 
-        @response_builder << create_code_lens(
-          node,
-          title: "Debug",
-          command_name: "rubyLsp.debugTest",
-          arguments: arguments,
-          data: { type: "debug", **grouping_data },
-        )
+        # @response_builder << create_code_lens(
+        #   node,
+        #   title: "Debug",
+        #   command_name: "rubyLsp.debugTest",
+        #   arguments: arguments,
+        #   data: { type: "debug", **grouping_data },
+        # )
       end
     end
   end
